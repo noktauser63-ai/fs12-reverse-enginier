@@ -1,0 +1,19 @@
+# aspect=1.3333334 lang=1 phase=0 c=0 x146=0 fn=renderStartMenuHelp scroll=0 dw=- db=- mw=58d0:1
+O 0000000f 00000000 00000000 3f800000 3f800000 00000000 00000000 3a800000 3a800000
+C 3f800000 3f800000 3f800000 3f800000
+O 0000000c 3ec00000 3da3d70b 3f200000 3bb60b61 00000000 00000000 3f000000 3c000000
+F 41d00000
+R 00000063 3f7ae148 3c91a2b4 0000000c "Fahrzeug Steuerung"
+F 41900000
+O 0000000f 3e583128 3e533334 3e79999a 3ed1c71d 3e8b0000 3c000000 3e6a0000 3e938000
+R 00000063 3eaa7efa 3f222222 0000000a "Drücke und halte den Regler um mit der
+gewählten Geschwindigkeit zu fahren.
+Ziehe den Regler in den roten Bereich
+um rückwärts zu fahren."
+O 0000000f 3f3a4dd3 3e62d82e 3e59999a 3ec22222 3f118000 3f3a0000 3e4c0000 3e888000
+R 00000063 3f558106 3f222222 0000000a "Wische links oder
+rechts um
+dein Fahrzeug
+zu wechseln."
+F 41800000
+R 00000063 3f000000 3f666666 00000012 "Tippe auf den Bildschirm um fortzufahren"
