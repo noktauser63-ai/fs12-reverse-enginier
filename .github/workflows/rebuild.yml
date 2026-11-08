@@ -126,6 +126,10 @@ jobs:
           unzip -q -o "$ASSETZIP" 'assets/*' -d "$RUNNER_TEMP/apk"   # audio, gui, map, objects, shader (dunya gorunumu icin map/ gerekli)
           for d in audio gui map objects shader; do [ -d "$RUNNER_TEMP/apk/assets/$d" ] || echo "UYARI: assets/$d yok"; done
           ls "$RUNNER_TEMP/apk/assets" | head
+      - name: Yuksek kaliteli dokulari uygula (hd_textures/ -> .p2d)
+        run: |
+          pip install pillow
+          if [ -d hd_textures ]; then python3 tools/png2p2d.py "$RUNNER_TEMP/apk/assets" hd_textures "$RUNNER_TEMP/apk/assets" | tail -40; fi
       - name: Turkce harfler icin font atlasini yamala
         run: |
           pip install numpy pillow

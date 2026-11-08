@@ -38,6 +38,8 @@ struct MapData {
     float minX() const { return originX - cellW * 0.5f; }   // Map+0x1c
     float minY() const { return originY - cellH * 0.5f; }   // Map+0x20
     // Dosya verisi MapData yasadikca gecerli kalmalidir (mesh isaretcileri icine bakar).
+    // zemin yuksekligi (dunya x,z): hucre zemin agi ucgenlerinden. false: harita disi / ucgen bulunamadi
+    bool groundHeight(float x, float z, float& h) const;
     bool parse(const uint8_t* data, size_t size);
 };
 } // namespace fs12

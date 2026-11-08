@@ -27,8 +27,8 @@ target_link_libraries(fs12_engine PUBLIC box2d fs12_audio)
 add_library(fs12_data STATIC src/data/Strings.cpp src/data/FontData03.cpp src/data/GuiStatics.cpp src/data/GuiInitialState.cpp src/data/Credits.cpp src/data/StringsTr.cpp src/data/FontTr.cpp src/render/Font.cpp src/render/P2D.cpp)
 
 # ---- Oyun mantigi (GUI, ...) ----
-add_library(fs12_game STATIC src/game/GenericGUIManager.cpp src/game/GuiUpdate.cpp src/game/ModBridge.cpp src/game/MenuApp.cpp src/game/SaveGames.cpp src/game/MapData.cpp)
-target_link_libraries(fs12_game PUBLIC fs12_data fs12_platform)
+add_library(fs12_game STATIC src/game/GenericGUIManager.cpp src/game/GuiUpdate.cpp src/game/ModBridge.cpp src/game/MenuApp.cpp src/game/SaveGames.cpp src/game/MapData.cpp src/game/MapPhysics.cpp)
+target_link_libraries(fs12_game PUBLIC fs12_data fs12_platform box2d)
 target_include_directories(fs12_data PUBLIC src)
 
 # ---- Platform katmani (dosya/asset, kayit sifreleme, girdi) ----
@@ -106,6 +106,9 @@ if(FS12_BUILD_TESTS AND NOT ANDROID)
     add_executable(mapdata_test tests/mapdata_test.cpp)
     target_link_libraries(mapdata_test PRIVATE fs12_game fs12_platform)
     target_include_directories(mapdata_test PRIVATE src)
+    add_executable(mapphysics_test tests/mapphysics_test.cpp)
+    target_link_libraries(mapphysics_test PRIVATE fs12_game fs12_platform)
+    target_include_directories(mapphysics_test PRIVATE src)
     add_executable(layout_test tests/layout_test.cpp)
     target_include_directories(layout_test PRIVATE src)
     add_executable(font_test tests/font_test.cpp)

@@ -125,3 +125,8 @@ CI host-tests: layout_test, gui_trace_test, gui_input_test.
 - MenuApp: startGame/pauseGame/inGame; yeni oyun/yukleme -> dunya; geri tusu veya sag ust kose -> duraklat menusu; geri = devam, cikis = baslik.
 - Buycoin dugmesi gizlendi (Google Play kaldirildi). tools/host_shot ile ekran goruntusu dogrulamasi.
 - Siradaki: HUD (renderBaseMenu), arazi/tarla katmanlari, arac/varlik sistemi.
+- Oturum 10b: CMake'e WorldView.cpp eklendi (link hatasi), Credits \xbc kacisi, ETC1 yazilim cozumu (telefonda donanim yolu bozuk), zemin karolarinda WorldLightmap shader.
+- Siradaki: tarla/ekin katmani (FieldGround shader), gokyuzu/sis, HUD, araclar.
+- Oturum 10c: Deutz 7545 bicerdover (EntityManager tablosundan tekerlek konumlari), MapData::groundHeight, VehicleDrive (gecici bisiklet modeli surus + takip kamerasi), dokunmatik: sol %40 gaz (yukari=ileri), sag direksiyon. tools/png2p2d.py (yuksek cozunurluklu doku).
+- Siradaki: gercek Vehicle/Wheel fizigi (Box2D), carpisma (polygons), digger araclar, HUD.
+- Oturum 10d: MapPhysics (Box2D, 1347 statik cokgen = Map::load gibi, konum (a,b) + yerel kose), arac govdesi, tests/mapphysics_test. NOT: harita kenarindaki ilk cokgenler sinir seritleri.
