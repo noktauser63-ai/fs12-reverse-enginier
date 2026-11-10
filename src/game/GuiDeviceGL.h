@@ -14,7 +14,7 @@ namespace fs12 {
 class GuiDeviceGL : public GuiRenderDevice {
 public:
     // doku kimlikleri (GenericGUIManager::Textures icin)
-    enum TexId : uint32_t { T_NONE = 0, T_FONT = 1, T_ELEMENTS, T_SHOP_ALPHA, T_SHOP_BG, T_GESTURES, T_MAP, T_TITLE, T_LOGO, T_EDITION };
+    enum TexId : uint32_t { T_NONE = 0, T_FONT = 1, T_ELEMENTS, T_SHOP_ALPHA, T_SHOP_BG, T_GESTURES, T_MAP, T_TITLE, T_LOGO, T_EDITION, T_SHOP_EXT };
 
     GuiDeviceGL(Renderer* r, const char* language);
     GenericGUIManager::Textures textures() const;

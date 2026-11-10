@@ -8,9 +8,10 @@
 #include "game/GuiDeviceGL.h"
 #include "game/MenuApp.h"
 #include "game/WorldView.h"
-#include "game/CowHerd.h"
-#include "game/CowshedSite.h"
 #include "game/WorldCamera.h"
+#include "game/VehicleDrive.h"
+#include "game/MapPhysics.h"
+#include "game/VehicleCatalog.h"
 #include <GLES2/gl2.h>
 #include <cmath>
 #include <string>
@@ -23,12 +24,29 @@ audio::Output* g_out = nullptr;
 Renderer* g_r = nullptr;
 GuiDeviceGL* g_dev = nullptr;
 MenuApp* g_menu = nullptr;
+static const VehicleSpec* g_spec = nullptr;
 WorldView* g_world = nullptr;
 WorldCamera g_cam;
-CowHerd g_herd;
-float g_hour = 8.f;   // oyun saati (Game gelene kadar yer tutucu: 1 gercek sn = 1 oyun dk)
+VehicleDrive g_veh;
+MapPhysics* g_phys = nullptr;
 bool g_wasIn = false;
 
+// Aktif araci sahneye/surus modeline uygular (dukkandan secilen arac; yoksa varsayilan Magnum, o da yoksa orijinal Deutz 7545)
+static void applyVehicle(const VehicleSpec* want) {
+    if (!want) want = findVehicle("magnum");
+    g_veh.speed = 0.f;
+    if (want && want->nWheels >= 3 && g_world->addVehicleSpec(*want)) {
+        float fz = -1e9f, rz = 1e9f, r = 0.9f;
+        for (int i = 0; i < want->nWheels; ++i) { if (want->wheels[i].z > fz) fz = want->wheels[i].z; if (want->wheels[i].z < rz) rz = want->wheels[i].z; r = want->wheels[i].radius; }
+        g_veh.wheelBase = fz > rz ? fz - rz : 3.0f; g_veh.maxSpeed = want->topKmh / 3.6f; g_veh.wheelRadius = r;
+        g_phys->createVehicle(g_veh.x, g_veh.z, g_veh.yaw, 1.5f, g_veh.wheelBase * 0.5f + 1.4f, 0.2f);
+        g_spec = want;
+    } else {
+        g_spec = nullptr;
+        g_phys->createVehicle(g_veh.x, g_veh.z, g_veh.yaw, 1.5f, 3.6f, 0.2f);
+        g_world->addDeutz7545(g_veh.x, 0.f, g_veh.z, g_veh.yaw);
+    }
+}
 void onInit(android_app* app) {
     SystemDevice* sd = SystemDevice::instance();
     sd->logf("FS12: GL hazir, ses baslatiliyor");
@@ -45,12 +63,10 @@ void onInit(android_app* app) {
     g_dev = new GuiDeviceGL(g_r, sd->languageCode().c_str());
     g_world = new WorldView(g_r, sd);
     g_world->load();
-    // Silolarin karsisindaki kapali ambar kaldirilir, yerine inek surusu konur (ahir modeli sonra).
-    g_world->hideObject(cowshed_site::kBarnObject);
-    g_world->hideObject(cowshed_site::kConveyorObject);
-    g_herd.setPlacement(cowshed_site::kHerdX, cowshed_site::kHerdY, cowshed_site::kHerdZ, cowshed_site::kHerdYaw);
-    g_world->setCowHerd(&g_herd);
-    g_cam.pos[0] = cowshed_site::kHerdX - 30.f; g_cam.pos[1] = 4.f; g_cam.pos[2] = cowshed_site::kHerdZ;
+    g_phys = new MapPhysics();
+    g_phys->build(g_world->map());
+    g_veh.phys = g_phys;
+    g_veh.camYaw = 3.14159265f - g_veh.yaw;
     g_menu = new MenuApp(g_dev, g_dev->textures(), sd->language());
     static struct NoGameCb : SaveGames::AppSaveGameCallbackInterface {   // Game sinifi gelene kadar yer tutucu
         uint32_t serialize(AppSaveGameSlotData&, uint8_t*, const char*) override { return 0; }
@@ -59,21 +75,44 @@ void onInit(android_app* app) {
     static SaveGames s_saves;
     s_saves.load(sd, &s_cb);
     g_menu->setSaves(&s_saves);
+    {   // oyuncu durumu (para/araclar)
+        std::vector<uint8_t> sv;
+        if (sd->loadSave("fs12_state.bin", sv)) g_menu->state().fromBytes(sv.data(), sv.size());
+        g_menu->onStateChanged = [] { auto b = g_menu->state().toBytes(); SystemDevice::instance()->saveFile("fs12_state.bin", b.data(), b.size()); };
+        g_menu->setShopTexture(GuiDeviceGL::T_SHOP_EXT);
+        applyVehicle(g_menu->state().activeSpec());
+    }
 }
 void onGLLost() { if (g_r) g_r->contextLost(); }
 void onGLRestored() { if (g_r) { g_r->resize(AndroidActivity::instance()->width(), AndroidActivity::instance()->height()); g_r->contextRestored(); } }
+static float g_gameClock = 8.0f * 60.0f;   // oyun ici dakika (08:00 baslangic)
 void onFrame(float dt) {
     InputDevice* in = InputDevice::instance();
+    const bool wasIn = g_menu->inGame();
     g_menu->update(in, dt);
-    g_hour += dt / 60.f; if (g_hour >= 24.f) g_hour -= 24.f;
-    g_herd.update(g_hour);
-    if (g_menu->inGame()) g_cam.update(in, dt);
-    g_r->clear(0.f, 0.f, 0.f);
+    if (g_menu->inGame() && !wasIn && g_world && g_world->loaded()) {   // oyuna girerken secili araci uygula
+        const VehicleSpec* w = g_menu->state().activeSpec();
+        if (w && w != g_spec) applyVehicle(w);
+    }
+    if (g_menu->inGame() && g_world && g_world->loaded()) {
+        g_veh.readTouch(in);
+        g_veh.update(dt > 0.05f ? 0.05f : dt, &g_world->map());
+        if (g_spec) g_world->setSpecPose(g_veh.x, g_veh.y, g_veh.z, g_veh.yaw, g_veh.pitch, g_veh.steer, g_veh.spin);
+        else g_world->setDeutzPose(g_veh.x, g_veh.y, g_veh.z, g_veh.yaw, g_veh.pitch, g_veh.steer, g_veh.spin);
+        g_cam.pos[0] = g_veh.camPos[0]; g_cam.pos[1] = g_veh.camPos[1]; g_cam.pos[2] = g_veh.camPos[2];
+        g_cam.yaw = g_veh.camYaw; g_cam.pitch = g_veh.camPitch;
+    }
+    if (g_menu->playing()) g_r->clear(0.55f, 0.7f, 0.9f); else g_r->clear(0.f, 0.f, 0.f);   // gokyuzu rengi
     if (g_menu->playing() && g_world && g_world->loaded()) {
         g_world->setCamera(g_cam.pos[0], g_cam.pos[1], g_cam.pos[2], g_cam.yaw, g_cam.pitch);
         g_world->render();
     }
     g_dev->beginFrame();
+    if (g_menu->inGame()) {
+        g_gameClock += dt * 1.0f; if (g_gameClock >= 1440.f) g_gameClock -= 1440.f;   // 1 gercek sn = 1 oyun dk
+        GuiHudCtl h; h.money = (uint32_t)(g_menu->state().money < 0 ? 0 : g_menu->state().money); h.hours = (uint32_t)(g_gameClock / 60.f); h.minutes = (uint32_t)g_gameClock % 60; h.sel59c = 0; h.v124 = (uint32_t)(std::fabs(g_veh.speed) * 3.6f + 0.5f); h.pct = 1.0f;   // sol sayi = hiz km/h (tahmin), % = depo
+        g_menu->renderHud(h);
+    }
     g_menu->render();
     AndroidActivity::instance()->swap();
 }

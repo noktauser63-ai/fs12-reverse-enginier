@@ -33,6 +33,7 @@ Texture2D* GuiDeviceGL::tex(uint32_t id) {
     case T_TITLE: return m_r->texture("gui/genericTitleScreen_PN.p2d");
     case T_LOGO: return m_r->texture(m_logo.c_str());
     case T_EDITION: return m_r->texture("gui/MultipEditionStamp_U.p2d");
+    case T_SHOP_EXT: return m_r->texture("gui/shopExt_P.p2d");
     default: return nullptr;
     }
 }

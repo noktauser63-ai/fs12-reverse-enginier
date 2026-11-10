@@ -18,7 +18,8 @@ Renderer::~Renderer() {
 void Renderer::init(int w, int h) {
     m_w = w; m_h = h;
     const char* ext = (const char*)glGetString(GL_EXTENSIONS);
-    m_etc1 = ext && strstr(ext, "GL_OES_compressed_ETC1_RGB8_texture");
+    m_etc1 = false;   // cihazda ETC1 donanim yolu bozuk/gurultulu cikti; yazilim cozucu ana makinede dogrulandi
+    (void)ext;
     LOGI("GL: %s | %s | ETC1=%d", glGetString(GL_RENDERER), glGetString(GL_VERSION), (int)m_etc1);
     contextRestored();
 }

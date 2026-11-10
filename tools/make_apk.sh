@@ -11,7 +11,8 @@ BT=$(ls -d "$SDK"/build-tools/* | sort -V | tail -1)
 JAR=$(ls -d "$SDK"/platforms/android-*/android.jar | sort -V | tail -1)
 echo "build-tools: $BT  android.jar: $JAR"
 W=$(mktemp -d); trap 'rm -rf "$W"' EXIT
-"$BT/aapt2" link -o "$W/base.apk" -I "$JAR" --manifest "$HERE/packaging/AndroidManifest.xml" \
+"$BT/aapt2" compile --dir "$HERE/packaging/res" -o "$W/res.zip"      # launcher ikonu (kapak)
+"$BT/aapt2" link -o "$W/base.apk" -I "$JAR" --manifest "$HERE/packaging/AndroidManifest.xml" "$W/res.zip" \
     --min-sdk-version 24 --target-sdk-version 35 --version-code 1 --version-name 0.1-smoke
 mkdir -p "$W/pkg"; cd "$W/pkg"
 for e in "${LIBS[@]}"; do abi=${e%%:*}; so=${e#*:}; mkdir -p "lib/$abi"; cp "$so" "lib/$abi/libapp.so"; done

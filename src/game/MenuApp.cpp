@@ -1,6 +1,7 @@
 #include "game/MenuApp.h"
 #include "data/Credits.h"
 #include "platform/InputDevice.h"
+#include <cstdio>
 
 namespace fs12 {
 
@@ -70,11 +71,45 @@ void MenuApp::handleNext(uint32_t ns) {
         }
         break;
     case 7:
+        if (m_shopTex && (ns == 0x19 || ns == 0x1a || ns == 0x1c || ns == 0x1e)) {   // dukkan: 0x19 al, 0x1a sat, 0x1e sur (secili oge = karusel indeksi)
+            const int slot = (int)m_gui.rd(0x583c);
+            bool ok = ns == 0x1a ? m_state.sell(slot) : ns == 0x1e ? m_state.select(slot) : m_state.buy(slot);
+            if (ok && onStateChanged) onStateChanged();
+            fillShop(); m_ctl.nextState = 0; break;
+        }
         if (ns == 9 && m_playing) { m_paused = false; }                       // geri: oyuna don
         else if (ns == 5 || ns == 8 || ns == 9) { m_playing = false; m_paused = false; enter(2); }
         break;
     default: break;
     }
+}
+
+void MenuApp::setShopTexture(uint32_t t) { m_shopTex = t; fillShop(); }
+
+// Dukkan karuselini katalogdan doldurur (ad, aciklama, fiyat, sahiplik, bakiye, dugme durumlari).
+void MenuApp::fillShop() {
+    GuiShopCtl& sh = m_ctl.shop;
+    const int N = m_shopTex ? GameState::shopCount() : 18;
+    if (!m_shopTex) { sh.n = 18; sh.extTex = 0; return; }
+    sh.n = (uint32_t)N; sh.extTex = m_shopTex;
+    size_t cnt; const VehicleSpec* v = vehicleSpecs(cnt);
+    static char desc[32][128];
+    for (int s = 0; s < N && s < 32; ++s) {
+        const int i = GameState::specIndex(s); const VehicleSpec& sp = v[i];
+        sh.name[s] = sp.name; sh.price[s] = (uint32_t)sp.price; sh.count[s] = m_state.owned[i] ? 1 : 0;
+        char* d = desc[s];
+        if (sp.kind == VKind::Combine) snprintf(d, 128, "%s | %.0f PS | %.0f km/h | %.1f m | %.0f L", sp.brand, sp.ps, sp.topKmh, sp.headerM, sp.tankL);
+        else if (sp.kind == VKind::Planter || sp.kind == VKind::Cultivator) snprintf(d, 128, "%s | %.1f m", sp.brand, sp.headerM);
+        else snprintf(d, 128, "%s | %.0f PS | %.0f Nm | %.0f km/h", sp.brand, sp.ps, sp.torqueNm, sp.topKmh);
+        sh.desc[s] = d;
+        sh.canUse[s] = m_state.owned[i] && m_state.active != i && (sp.kind == VKind::Tractor || sp.kind == VKind::Combine || sp.kind == VKind::Pickup);
+        sh.canA[s] = m_state.canBuy(s); sh.canB[s] = m_state.canSell(s);
+        sh.badgeA[s] = sh.badgeB[s] = sh.badgeC[s] = 0;
+        sh.ext[s] = {0.175f, 0.225f, (float)((s % 4) * 256) / 1024.f, (float)((s / 4) * 219) / 1024.f, 256.f / 1024.f, 219.f / 1024.f};
+        m_ctl.slotUsed[s] = 0;
+    }
+    sh.useLabel = m_lang == 10 ? "S\xc3\xbcr" : m_lang == 1 ? "Fahren" : "Drive";
+    sh.money = (uint32_t)(m_state.money < 0 ? 0 : m_state.money);
 }
 
 void MenuApp::startGame() { m_playing = true; m_paused = false; enter(7); }
@@ -89,6 +124,7 @@ void MenuApp::update(InputDevice* in, float dt) {
     m_age += dt;
     if (m_age > 1.0f) m_ctl.menuActive = true;
     m_pad.pressed = in->buttonsPressed(); m_pad.held = in->buttonsHeld(); m_pad.released = in->buttonsReleased();
+    fillShop();
     m_gui.update(m_ctl, in, m_pad, m_cb, dt);
     handleNext(m_ctl.nextState);
     // geri tusu: alt menulerde bir ust menuye
@@ -99,10 +135,14 @@ void MenuApp::update(InputDevice* in, float dt) {
     }
 }
 
+void MenuApp::renderHud(const GuiHudCtl& hud) {
+    GuiMenuCtl c = m_ctl; c.state = 6; c.hud = hud;
+    m_gui.renderBaseMenu(c, m_lang);
+}
 void MenuApp::render() {
     if (inGame()) return;
     // Google Play satin alma kaldirildi: market sayfasindaki "Buycoin" dugmesi gizlenir (flags |= 0x80)
-    if (m_ctl.state == 7 && m_gui.rd(0x58cc) == 1) { const uint32_t o = m_gui.rd(0x581c) * 0xb0 + 0xc; m_gui.wr(o, m_gui.rd(o) | 0x80); }
+    if (m_ctl.state == 7 && m_gui.rd(0x58cc) == 1 && !m_shopTex) { const uint32_t o = m_gui.rd(0x581c) * 0xb0 + 0xc; m_gui.wr(o, m_gui.rd(o) | 0x80); }
     m_gui.render(m_ctl, m_lang, kCreditLines);
 }
 

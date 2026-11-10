@@ -10,8 +10,9 @@ namespace fs12 {
 struct VehicleDrive {
     float x = 10.f, z = -3.f, yaw = 0.5f, speed = 0.f, steer = 0.f;
     float y = 0.f, pitch = 0.f, spin = 0.f;
+    float wheelRadius = 0.9f;
     float wheelBase = 3.6329f;           // on aks z=+2.291, arka aks z=-1.3419
-    float maxSpeed = 8.0f, maxSteer = 0.55f;
+    float maxSpeed = 8.3333333f, maxSteer = 0.55f;
     float camYaw = 0.f;                  // takip kamerasi (WorldView yaw'i)
     float camPos[3] = {0, 0, 0}, camPitch = 0.3f;
     float throttle = 0.f, steerIn = 0.f; // -1..1 (dokunmatik/test girisi)
@@ -52,7 +53,7 @@ struct VehicleDrive {
             yaw += yawRate * dt;
             x += std::sin(yaw) * speed * dt; z += std::cos(yaw) * speed * dt;
         }
-        spin += speed * dt / 0.9f;
+        spin += speed * dt / wheelRadius;
         float hf = 0, hb = 0, h;
         const float sx = std::sin(yaw), cx = std::cos(yaw);
         bool okF = map && map->groundHeight(x + sx * 2.291f, z + cx * 2.291f, hf);

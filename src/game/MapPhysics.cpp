@@ -23,6 +23,7 @@ void MapPhysics::build(const MapData& map) {
 }
 
 void MapPhysics::createVehicle(float x, float z, float yaw, float halfW, float halfL, float centerZ) {
+    if (m_veh) { m_world->DestroyBody(m_veh); m_veh = nullptr; }
     b2BodyDef bd; bd.type = b2_dynamicBody; bd.position.Set(x, z); bd.angle = -yaw; bd.linearDamping = 0.f; bd.angularDamping = 0.f;
     m_veh = m_world->CreateBody(&bd);
     b2PolygonShape s; s.SetAsBox(halfW, halfL, b2Vec2(0.f, centerZ), 0.f);

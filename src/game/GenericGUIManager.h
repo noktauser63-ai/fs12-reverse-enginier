@@ -73,6 +73,12 @@ struct GuiShopCtl {   // GUIInterfaceDesc market alanlari (+0x734..+0x108c, +0x1
     uint32_t count[18] = {};                                      // +0x5a8
     uint32_t price[18] = {};                                      // +0x614
     uint32_t money = 0;                                           // +0x12c
+    // genisletilmis dukkan (katalog): n oge, ikonlar ayri atlasta (extTex != 0); 0 = orijinal 18'lik karusel
+    uint32_t n = 18;
+    uint32_t extTex = 0;
+    OverlayDesc ext[32] = {};
+    const char* useLabel = nullptr;   // 3. dugme (Buycoin yerine) "Sur": sahip olunan araci sec
+    uint8_t canUse[32] = {};
 };
 
 struct GuiDialogCtl {   // GUIInterfaceDesc diyalog alanlari: +0x10 id[3], +0x1c metin[3], +0x28 satir sayisi, +0x107c kayit adlari
@@ -82,6 +88,17 @@ struct GuiDialogCtl {   // GUIInterfaceDesc diyalog alanlari: +0x10 id[3], +0x1c
     char slotName[3][128] = {};
 };
 
+struct GuiHudCtl {              // oyun ici ust cubuk (renderBaseMenu): GUIInterfaceDesc alanlari
+    uint32_t v124 = 0;          // +0x124 ('%03d')
+    uint8_t f128 = 0;           // +0x128 (!=0: kirmizi)
+    uint32_t money = 0;         // +0x12c (formatNumber, en fazla 99999999)
+    uint32_t v130 = 0;          // +0x130 ('%02d')
+    uint32_t hours = 0, minutes = 0;   // +0x134, +0x138
+    uint8_t f143 = 0;           // +0x143 (tarla sahipsiz simgesi)
+    uint32_t sel59c = 0;        // +0x59c (2,3,4: farkli simge u'su)
+    float pct = 0.f;            // +0x5a0 (x100 -> '%3d%%')
+    uint8_t f5a4 = 0;           // +0x5a4 (yanip sonme)
+};
 struct GuiMenuCtl {
     bool soundOn = true;          // +0x00
     uint32_t state = 0;           // +0x04 aktif menu (2 ana, 3 jenerik, 4 kayit, 5 zorluk, 6 taban, 7 baslangic)
@@ -97,6 +114,7 @@ struct GuiMenuCtl {
     uint32_t saveMoney[3] = {}, saveHours[3] = {}, saveMinutes[3] = {};  // +0x100, +0x10c, +0x118
     GuiShopCtl shop;
     GuiDialogCtl dlg;
+    GuiHudCtl hud;
     uint8_t slotUsed[256] = {};   // +0x76a + manager[0x583c]
     uint32_t w1224[(0x12dc - 0x1224) / 4] = {};  // fiyat tablosu (+0x1224..) ve istatistikler (+0x1264..): ham sozcukler
     uint32_t statAt(uint32_t off) const { return w1224[(off - 0x1224) / 4]; }
@@ -148,6 +166,7 @@ public:
     void renderStartMenuHelp(int language);
     void renderTitleYOffset(const char* text, float yOff);
     void renderStartMenuPrices(const GuiMenuCtl& ctl, int language);
+    void renderBaseMenu(const GuiMenuCtl& ctl, int language);
     void renderTitle2(const char* left, const char* right);
     void renderStartMenuStatistics(const GuiMenuCtl& ctl, int language);
     void renderSaveGameMenu(const GuiMenuCtl& ctl, int language);

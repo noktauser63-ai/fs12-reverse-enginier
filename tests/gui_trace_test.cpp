@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < 18; ++i) { snprintf(names[i], 16, "Name%d", i); snprintf(descs[i], 16, "Desc%d", i); }
     std::string dir = argc > 1 ? argv[1] : "tests/golden";
     int bad = 0, total = 0;
-    for (const char* name : {"main_a", "main_b", "main_c", "main_d", "startmain_a", "startmain_b", "credits_a", "credits_b", "credits_c", "settings_a", "settings_b", "help_0", "help_1", "help_2", "help_3", "save_a", "save_b", "stats_a", "stats_b", "prices_a", "prices_b", "shop_a", "shop_b", "shop_c", "shop_d", "dlg_a", "dlg_b", "dlg_c", "dlg_d"}) {
+    for (const char* name : {"main_a", "main_b", "main_c", "main_d", "startmain_a", "startmain_b", "credits_a", "credits_b", "credits_c", "settings_a", "settings_b", "help_0", "help_1", "help_2", "help_3", "save_a", "save_b", "stats_a", "stats_b", "prices_a", "prices_b", "shop_a", "shop_b", "shop_c", "shop_d", "dlg_a", "dlg_b", "dlg_c", "dlg_d", "base_a", "base_b", "base_c"}) {
         std::ifstream in(dir + "/gui_trace_" + name + ".txt");
         if (!in) { printf("yok: %s\n", name); return 2; }
         std::string hdr; std::getline(in, hdr);
@@ -43,7 +43,9 @@ int main(int argc, char** argv) {
             if (o >= 0x6a4 && o < 0x6a4 + 72) ctl.shop.desc[(o - 0x6a4) / 4] = v ? descs[(o - 0x6a4) / 4] : nullptr;
             if (o >= 0x5a8 && o < 0x5a8 + 72) ctl.shop.count[(o - 0x5a8) / 4] = v;
             if (o >= 0x614 && o < 0x614 + 72) ctl.shop.price[(o - 0x614) / 4] = v;
-            if (o == 0x12c) ctl.shop.money = v;
+            if (o == 0x12c) { ctl.shop.money = v; ctl.hud.money = v; }
+            if (o == 0x124) ctl.hud.v124 = v; if (o == 0x130) ctl.hud.v130 = v; if (o == 0x134) ctl.hud.hours = v; if (o == 0x138) ctl.hud.minutes = v;
+            if (o == 0x59c) ctl.hud.sel59c = v; if (o == 0x5a0) memcpy(&ctl.hud.pct, &v, 4);
             if (o >= 0x10 && o < 0x1c) ctl.dlg.id[(o - 0x10) / 4] = (int)v;
             if (o >= 0x1c && o < 0x28) { static char mm[3][8]; int i = (o - 0x1c) / 4; snprintf(mm[i], 8, "Msg%d", i); ctl.dlg.text[i] = v ? mm[i] : nullptr; }
             if (o == 0x28) ctl.dlg.count = v;
@@ -54,6 +56,7 @@ int main(int argc, char** argv) {
             if (o >= 0x76a && o < 0x77c) ctl.slotUsed[o - 0x76a] = v;
             if (o >= 0x77c && o < 0x77c + 18 * 0x80 && (o - 0x77c) % 0x80 == 0) snprintf(ctl.shop.alt[(o - 0x77c) / 0x80], 128, "Alt%u", (o - 0x77c) / 0x80);
             if (o >= 0x107c && o < 0x107c + 3 * 0x80 && (o - 0x107c) % 0x80 == 0) snprintf(ctl.dlg.slotName[(o - 0x107c) / 0x80], 128, "Slot%u", (o - 0x107c) / 0x80);
+            if (o == 0x128) ctl.hud.f128 = v; if (o == 0x143) ctl.hud.f143 = v; if (o == 0x5a4) ctl.hud.f5a4 = v;
             if (o == 0x1220) ctl.shop.flag1220 = v;
             if (o == 0x1221) ctl.shop.flag1221 = v;
             if (o == 0x12f4) ctl.flag12f4 = v; if (o == 0x12f5) ctl.flag12f5 = v; if (o == 0x12f6) ctl.flag12f6 = v; }
@@ -74,6 +77,7 @@ int main(int argc, char** argv) {
         else if (!strcmp(fn, "renderSaveGameMenu")) g.renderSaveGameMenu(ctl, lang);
         else if (!strcmp(fn, "renderDialog")) g.renderDialog(ctl, lang);
         else if (!strcmp(fn, "renderStartMenuShop")) g.renderStartMenuShop(ctl, lang);
+        else if (!strcmp(fn, "renderBaseMenu")) g.renderBaseMenu(ctl, lang);
         else if (!strcmp(fn, "renderStartMenuPrices")) g.renderStartMenuPrices(ctl, lang);
         else if (!strcmp(fn, "renderStartMenuStatistics")) g.renderStartMenuStatistics(ctl, lang);
         else if (!strcmp(fn, "renderStartMenuHelp")) g.renderStartMenuHelp(lang);

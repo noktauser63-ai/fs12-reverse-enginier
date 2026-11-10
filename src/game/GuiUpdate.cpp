@@ -299,6 +299,7 @@ void GenericGUIManager::updateStartMenuShop(GuiMenuCtl& ctl, InputDevice* in, Gu
     if (!sh.canB[sel]) b1.flags |= 2u; else b1.flags &= ~2u;
     if (!sh.canA[sel]) b2.flags |= 2u; else b2.flags &= ~2u;
     if (ctl.slotUsed[sel]) { b1.flags &= ~2u; b2.flags &= ~2u; }
+    if (sh.extTex) { GuiButton& b3 = button((int)rd(0x581c)); if (sh.canUse[sel]) b3.flags &= ~2u; else b3.flags |= 2u; }
     updateGuiButtons(ctl, in, pad, cb, rd(0x5810), (const uint32_t*)(m_raw + 0x5814));
 
     float scroll = rdf(0x5840), vel = rdf(0x5844);
@@ -369,8 +370,8 @@ void GenericGUIManager::updateStartMenuShop(GuiMenuCtl& ctl, InputDevice* in, Gu
 normalize:
     sel = (int)rd(0x583c);
     scroll = rdf(0x5840);
-    while (scroll <= -1.0f) { --sel; if (sel < 0) sel = 0x11; scroll = scroll + 1.0f; }
-    while (scroll >= 1.0f) { ++sel; if (sel > 0x11) sel = 0; scroll = scroll - 1.0f; }
+    while (scroll <= -1.0f) { --sel; if (sel < 0) sel = (int)sh.n - 1; scroll = scroll + 1.0f; }
+    while (scroll >= 1.0f) { ++sel; if (sel > (int)sh.n - 1) sel = 0; scroll = scroll - 1.0f; }
     wr(0x583c, (uint32_t)sel); wrf(0x5840, scroll);
 }
 } // namespace fs12

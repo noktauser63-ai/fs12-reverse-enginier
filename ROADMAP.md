@@ -125,20 +125,30 @@ CI host-tests: layout_test, gui_trace_test, gui_input_test.
 - MenuApp: startGame/pauseGame/inGame; yeni oyun/yukleme -> dunya; geri tusu veya sag ust kose -> duraklat menusu; geri = devam, cikis = baslik.
 - Buycoin dugmesi gizlendi (Google Play kaldirildi). tools/host_shot ile ekran goruntusu dogrulamasi.
 - Siradaki: HUD (renderBaseMenu), arazi/tarla katmanlari, arac/varlik sistemi.
+- Oturum 10b: CMake'e WorldView.cpp eklendi (link hatasi), Credits \xbc kacisi, ETC1 yazilim cozumu (telefonda donanim yolu bozuk), zemin karolarinda WorldLightmap shader.
+- Siradaki: tarla/ekin katmani (FieldGround shader), gokyuzu/sis, HUD, araclar.
+- Oturum 10c: Deutz 7545 bicerdover (EntityManager tablosundan tekerlek konumlari), MapData::groundHeight, VehicleDrive (gecici bisiklet modeli surus + takip kamerasi), dokunmatik: sol %40 gaz (yukari=ileri), sag direksiyon. tools/png2p2d.py (yuksek cozunurluklu doku).
+- Siradaki: gercek Vehicle/Wheel fizigi (Box2D), carpisma (polygons), digger araclar, HUD.
+- Oturum 10d: MapPhysics (Box2D, 1347 statik cokgen = Map::load gibi, konum (a,b) + yerel kose), arac govdesi, tests/mapphysics_test. NOT: harita kenarindaki ilk cokgenler sinir seritleri.
+- Oturum 11: hd_textures/map (kullanici dokulari, CI'da png2p2d ile uygulanir); zemin karolari GL_CLAMP_TO_EDGE (REPEAT karo kenarinda cizgi yapiyordu); kapak = launcher ikonu (packaging/res, make_apk.sh aapt2 compile).
+- Oturum 11b: yesil zeminlere ot/cali serpistirme (WorldView::buildGrass, mesh 48, hucre basina 10, 55 m cizim), kapak ikonu kose halesi temizlendi. Genel ilerleme tahmini ~%35.
 
-## Oturum 11 — Ahir (Cowshed) modulu
-- Kaynak: FS14 libfs14.so, Cows::update @ 0024e268 (Ghidra decompile). Sabitler: yem 6000 L/gun, saman 4000 L/gun, gubre 1000 L/gun,
-  sagim 06-07 ve 17-18 arasi (potansiyel -3000/saat, tanka en fazla 1000 L/saat), sut tanki 14000 L, ahir 32 ot + 32 saman balyasi.
-- [x] src/game/Cowshed.{h,cpp}: saf mantik (Game bagimliligi yok), kayit (serialize/deserialize v1), tests/cowshed_test.cpp (host, gecti).
-- [ ] TODO(constants.txt): BALE_VOLUME, MAX_MANURE_FILL_LEVEL, DAY_START_HOUR/NIGHT_START_HOUR, BALE_PRICE degerleri (FS14 .so veri bolumu; DumpConstants.java ile alinacak).
-- [ ] Game/Map/TipSite/Tool sinifi yok: "kapali ambar (saman satisi)" nesnesi haritada (m3d) duruyor, kodda karsiligi henuz yok.
-      Ambar -> ahir degisimi icin: harita nesnesi + satis noktasi mantigi Game portuyla birlikte yapilacak.
-- [ ] Gorsel: cowStanding/cowSleeping .p3d (+_shadow), cowStanding(02)_diffuse.p2d, bale.p3d, bale_grass/bale_straw.p2d. Renderer mesh/doku yukleyebiliyor; COW_ANIM shader'i (FS14) ayri portlanacak.
-- Not: ekonomi degerleri (ahir 120.000, sut 0,60/L) ONERI; oynayarak ayarlanacak.
+## Oturum 12 — HUD ust cubuk
+- GenericGUIManager::renderBaseMenu (0x33b8c) portlandi: 3 overlay + 5 metin (para, saat, %, vb.) + renderGuiButtons.
+- render() state 6 baglandi; base_a/b/c golden senaryolari: 32 senaryo, 0 fark.
+- Kalan: minimap/harita ikonlari, 0x143 tarla simgesi, updateBaseMenu.
+- Arac max hiz (VehicleDesc+0xe0, m/s): K420 13.89 (50 km/h), X720 16.67 (60), 5465 7.78 (28), 7545/RTSC 8.33 (30), BigX 8.33 (30). Dukkan fiyat/guc verileri loadShopItems'tan.
+- HUD oyun ici baglandi (MenuApp::renderHud). Sol sayi=hiz km/h, %=depo: TAHMIN (Game::fillIngameGuiDesc GUI alani Game+0x2c88'de, alan eslemesi henuz dogrulanmadi).
 
-## Oturum 12 — inekler
-- [x] tools/convert_p3d_fs14_to_fs12.py (FS14 28 bayt vertex + surum alani -> FS12 24 bayt). assets_extra/objects: cevrilmis inek/balya/gubre dosyalari; rebuild.yml paketlemede assets'e kopyalar.
-- [x] src/game/CowHerd.* (7 inek yerlesimi, gece yatma), WorldView::setCowHerd/renderCows (GL'de DOGRULANMADI), tests/cowherd_test.cpp (gecti).
-- [x] FS12 TipSite/Map::load analizi: docs/AHIR_ENTEGRASYON.md (7 satis/depo/BGA noktasi, fiyat formulu).
-- Siradaki: ambar noktasini belirle, Game baglantisi, COW_ANIM.
-- [x] Ahir yeri: silolarin karsisindaki kapali ambar = harita nesnesi #92 (102.3, 199.8); WorldView::hideObject, CowshedSite.h, android_entry baglandi (GL/cihazda dogrulanmadi). tools/map_objects.cpp.
+## Oturum 13 — FS12_Entegrasyon paketi
+- tools/import_ext.py: yeni p3d (1,nv,ni, 28 B kose = pos+nrm+tan+uv) -> orijinal 24 B formati; dokular (diffuse) ve parcalar ext_assets/ altinda. Normal haritalari ve .p1d sesler henuz kullanilmiyor (p1d 'ckmk' konteyneri orijinal RIFF/ADPCM'den farkli; cozucu gerek).
+- src/game/VehicleCatalog: segmentli arac tablosu. Traktor: K420 (Starter) / Ursus 11024 (Mid) / Magnum (Top); X720 kaldirildi. Bicerdover: 5465H / Deutz 6095 / Case 9230; 7545 RTS-RTSC kaldirildi. Ekipman: Condor ekici, Vaederstad kultivator; Pickup.
+- Oyunda varsayilan arac Magnum (WorldView::addVehicleSpec/setSpecPose). Tekerlek konumlari model sinirlarindan TAHMIN, host_shot ile gorsel dogrulandi.
+- Karakter dokulari: arac disi portre kartlari (4'lu), mahsul dokulari: tane/silaj tekstureleri -> ext_* klasorleri, entegrasyon bekliyor.
+- Tablalar (cutter) ayri parca olarak takilip cikarilacak: TODO.
+- Oturum 13b: arac hizalamasi siluet grafiklerinden dogrulandi/duzeltildi; K420 + 5465H katalige alindi (orijinal tekerlek tablosu EntityManager'dan).
+- DUKKAN: baslangic menusu sayfa 1 artik katalogdan (7 arac: K420, Ursus, Magnum, 5465H, 6095, 9230, pickup). Ikonlar tools/host_shot FS12_ICONS ile render edilip ext_assets/gui/shopExt_P.p2d (1024x1024, alt-ust ters). GameState (para 450000, K420+5465H sahip), Al/Sat(%70)/Sur dugmeleri, fs12_state.bin ile kalici. Oyuna girerken secili arac uygulanir.
+- Kalan: ekipman (Condor/Vaederstad) dukkanda yok, tablalar, mahsul dokusu eslemesi, p1d ses cozucu.
+- Oturum 13c: 5465H bosaltma borusu govdeye ofsetle (pivot 1.2417,2.8945,1.2983: VehicleDesc+0x15c) yerlestirildi (katlanmis konum). Condor ekici + Vaederstad kultivator (acik kanat yerlesimi tahmini) dukkana eklendi (9 oge); ekipman surulmez (select/active disi), baglama/katlama mekanigi YOK.
+- Inekler: baska bir yapay zekadan gelecek model bekleniyor.
+- Oturum 13d: biçerdöver tablaları (cutter+reel) govdeye ofsetle takildi: 5465H (3 m, orijinal mesh), 6095 (4.5 m) ve 9230 (7.5 m) orijinal deutz7545 tablasi X olcekli (0.534 / 0.89), objectsShared dokusuyla. Konumlar gorsel tahmin. Takip cikarma (tabla satisi/degisimi) ve kesim mantigi hala TODO.

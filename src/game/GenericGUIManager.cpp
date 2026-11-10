@@ -335,7 +335,8 @@ void GenericGUIManager::render(const GuiMenuCtl& ctl, int lang, const char* cons
     case 4: renderSaveGameMenu(ctl, lang); break;
     case 5: renderDifficultyLevelMenu(lang); break;
     case 7: renderStartMenu(ctl, lang, credits52); break;
-    default: break;   // TODO: 6 taban menusu
+    case 6: renderBaseMenu(ctl, lang); break;
+    default: break;
     }
     if (rd(0x5c78)) renderDialog(ctl, lang);
 }
@@ -462,7 +463,7 @@ void GenericGUIManager::renderStartMenuShop(const GuiMenuCtl& ctl, int lang) {
     m_dev->renderOverlay(rd(0x58b0), 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.5f - s * 0.5f, 1.0f, s);
     setButtonText((int)rd(0x5814), getString(0x10c, lang));
     setButtonText((int)rd(0x5818), getString(0x10b, lang));
-    setButtonText((int)rd(0x581c), getString(0x10f, lang));
+    setButtonText((int)rd(0x581c), sh.extTex && sh.useLabel ? sh.useLabel : getString(0x10f, lang));
     if (sh.flag1221) button((int)rd(0x581c)).flags |= 0x80;
     const int sel = (int)rd(0x583c);
     bool alt = false;
@@ -514,14 +515,16 @@ void GenericGUIManager::renderStartMenuShop(const GuiMenuCtl& ctl, int lang) {
     const uint32_t tex = rd(0x58ac);
     const OverlayDesc* items = reinterpret_cast<const OverlayDesc*>(g_shopItemData);   // adim 0x1c: OverlayDesc + 1 sozcuk
     auto item = [&](int i) { return od(g_shopItemData + i * 7); };
-    const uint32_t logo = g_shopItemData[sel * 7 + 6];
+    const uint32_t logo = sh.extTex ? 0u : g_shopItemData[sel * 7 + 6];
+    const uint32_t itex = sh.extTex ? sh.extTex : tex;
+    const int N = (int)sh.n;
     (void)items;
     if (logo) renderOverlay(od(g_m_shopLogoOffsets + logo * 6), bitsF(0x3ca3d70a), bitsF(0x3cf5c28f), 0x42, 9, tex, 1.0f, 1.0f);
     static const int offs[7] = {-3, 3, -2, 2, -1, 1, 0};
     const float scroll = rdf(0x5840);
     for (int k = 0; k < 7; ++k) {
         int i = offs[k] + sel;
-        if (i < 0) i += 18; else if (i > 17) i -= 18;
+        if (i < 0) i += N; else if (i > N - 1) i -= N;
         const float a1 = 180.0f - (float)offs[k] * 60.0f;
         const float ang = a1 + scroll * 60.0f;
         const float rad = ang + 90.0f;
@@ -538,8 +541,8 @@ void GenericGUIManager::renderStartMenuShop(const GuiMenuCtl& ctl, int lang) {
         f = 180.0f - f; f = f / 180.0f;
         const float col[4] = {1.0f, 1.0f, 1.0f, f};
         m_dev->setOverlayColor(col);
-        renderOverlay(item(i), X, Y, 0x44, 0x12, tex, sc, sc);
-        if (ctl.slotUsed[i]) { const float s2 = sc * bitsF(0x3f666666); renderOverlay(od(g_m_overlayLock), X, Y, 0x44, 0x12, tex, s2, s2); }
+        renderOverlay(sh.extTex ? sh.ext[i] : item(i), X, Y, 0x44, 0x12, itex, sc, sc);
+        if (!sh.extTex && ctl.slotUsed[i]) { const float s2 = sc * bitsF(0x3f666666); renderOverlay(od(g_m_overlayLock), X, Y, 0x44, 0x12, tex, s2, s2); }
         if ((double)fabsf(X - 0.5f) < 1e-4) {
             float bx;
             if (sh.badgeA[sel]) { renderOverlayF(bitsF(0x3f0f5c29), bitsF(0x3ebd70a4), bitsF(0x3d4ccccd), bitsF(0x3d99999a), bitsF(0x3d440000), bitsF(0x3f008000), bitsF(0x3d900000), bitsF(0x3e100000), 0x44, 0x12, rd(0x58a0)); bx = bitsF(0x3f1eb852); }
@@ -615,5 +618,54 @@ void GenericGUIManager::renderDialog(const GuiMenuCtl& ctl, int lang) {
         m_dev->renderText(rd(0x58c8), tx, (float)i * lineH + ty, 0x12, t ? t : "");
     }
     renderGuiButtons(m_dev, rd(0x591c), (const uint32_t*)(m_raw + 0x5920), 1.0f, 1.0f);
+}
+} // namespace fs12
+
+namespace fs12 {
+// Orijinal GenericGUIManager::renderBaseMenu (disassembly'den): oyun ici ust cubuk.
+// NOT: harita/minimap blogu (this+0x58e8 > 0) ve tarla simgesi (+0x143) henuz yok.
+void GenericGUIManager::renderBaseMenu(const GuiMenuCtl& ctl, int) {
+    const GuiHudCtl& h = ctl.hud;
+    const unsigned* bar = g_m_overlayMainBar;
+    auto bf = [&](int i) { float f; memcpy(&f, &bar[i], 4); return f; };
+    m_dev->setFontSize(bitsF(0x41b00000));
+    m_dev->setNumberMonospace(true, bitsF(0x41100000));
+    float x = 0.5f, y = 0.0f, w = bf(0), hh = bf(1);
+    { float cw = w, ch = hh; anchorShift(x, y, cw, ch, 10); }
+    const float wm = (w - bitsF(0x3ee00000)) - bitsF(0x3cbbbbbc);           // sp+0x34
+    float x124 = (x + bitsF(0x3ee00000)) + bitsF(0x3cbbbbbc);               // sp+0x9c
+    float ty = y + bitsF(0x3d533333);
+    m_scale.alignY(ty, 0x24);
+    float tx[5] = {x + bitsF(0x3e188889), x + bitsF(0x3ed5ddde), x + bitsF(0x3f0fbbbc), x + bitsF(0x3f2b3333), x + bitsF(0x3f304444)};
+    for (float& t : tx) m_scale.alignX(t, 0x24);
+    const float sx = m_scale.sx;
+    const float s24 = sx * bitsF(0x3cbbbbbc);
+    m_scale.align(x, y, w, hh, 0x24);
+    m_scale.alignX(x124, 0x24);
+    const float s28 = sx * bitsF(0x3ee00000);
+    const float s20 = wm * sx;
+    const float one[4] = {1.0f, 1.0f, 1.0f, 1.0f}, red[4] = {1.0f, 0.0f, 0.0f, 1.0f};
+    m_dev->setOverlayColor(one);
+    const float du = bitsF(0x3ed20000), pad = bitsF(0x3cb00000);
+    m_dev->renderOverlay(rd(0x58a0), x, y, s28, hh, bf(2), bf(3), du, bf(5));
+    m_dev->renderOverlay(rd(0x58a0), x124, y, s20, hh, (bf(2) + du) + pad, bf(3), (bf(4) - pad) - du, bf(5));
+    float us;
+    switch (h.sel59c) { case 2: us = bitsF(0x3f498000); break; case 3: us = bitsF(0x3f508000); break; case 4: us = bitsF(0x3f57c000); break; default: us = bf(2) + du; }
+    m_dev->renderOverlay(rd(0x58a0), s28 + x, y, s24, hh, us, bitsF(0x3f338000), pad, bitsF(0x3e020000));
+    char buf[64];
+    snprintf(buf, sizeof buf, "%03d", (int)h.v124);
+    if (h.f128) { m_dev->setOverlayColor(red); m_dev->renderText(rd(0x58c8), tx[0], ty, 0x14, buf); m_dev->setOverlayColor(one); }
+    else m_dev->renderText(rd(0x58c8), tx[0], ty, 0x14, buf);
+    formatNumber(buf, h.money > 99999999u ? 99999999u : h.money);
+    m_dev->renderText(rd(0x58c8), tx[1], ty, 0x14, buf);
+    snprintf(buf, sizeof buf, "%3d%%", (int)(h.pct * 100.0f));
+    if (h.f5a4 && phase() >= 0.0f) { m_dev->setOverlayColor(red); m_dev->renderText(rd(0x58c8), tx[2], ty, 0x14, buf); m_dev->setOverlayColor(one); }
+    else m_dev->renderText(rd(0x58c8), tx[2], ty, 0x14, buf);
+    snprintf(buf, sizeof buf, "%02d", (int)h.v130);
+    m_dev->renderText(rd(0x58c8), tx[3], ty, 0x14, buf);
+    snprintf(buf, sizeof buf, "%02d:%02d", (int)h.hours, (int)h.minutes);
+    m_dev->renderText(rd(0x58c8), tx[4], ty, 0x11, buf);
+    m_dev->setNumberMonospace(false, 0.0f);
+    renderGuiButtons(m_dev, rd(0x59a8), (const uint32_t*)(m_raw + 0x59ac), 1.0f, 1.0f);
 }
 } // namespace fs12
