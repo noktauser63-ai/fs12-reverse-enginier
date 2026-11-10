@@ -93,4 +93,27 @@ bool MapData::groundHeight(float x, float z, float& h) const {
     }
     return false;
 }
+bool MapData::groundUV(float x, float z, float& u, float& v) const {
+    const int ix = (int)((x - minX()) / cellW), iy = (int)((z - minY()) / cellH);
+    if (x < minX() || z < minY() || ix < 0 || iy < 0 || ix >= (int)nx || iy >= (int)ny) return false;
+    const MapCellRec& c = cells[(size_t)iy * nx + ix];
+    if (c.texture >= meshes.size()) return false;
+    const MapMeshRef& m = meshes[c.texture];
+    const float dx = x - (originX + ix * cellW), dz = z - (originY + iy * cellH);
+    const float ca = std::cos(c.rotation), sa = std::sin(c.rotation);
+    const float lx = ca * dx - sa * dz, lz = sa * dx + ca * dz;
+    for (uint32_t t = 0; t + 2 < m.indexCount; t += 3) {
+        float p[3][3], uv[3][2];
+        for (int k = 0; k < 3; ++k) { const uint8_t* vp = m.vertices + (size_t)m.indices[t + k] * 24; memcpy(p[k], vp, 12); memcpy(uv[k], vp + 16, 8); }
+        const float d = (p[1][2] - p[2][2]) * (p[0][0] - p[2][0]) + (p[2][0] - p[1][0]) * (p[0][2] - p[2][2]);
+        if (std::fabs(d) < 1e-9f) continue;
+        const float a = ((p[1][2] - p[2][2]) * (lx - p[2][0]) + (p[2][0] - p[1][0]) * (lz - p[2][2])) / d;
+        const float b = ((p[2][2] - p[0][2]) * (lx - p[2][0]) + (p[0][0] - p[2][0]) * (lz - p[2][2])) / d;
+        const float g = 1.f - a - b;
+        if (a < -1e-4f || b < -1e-4f || g < -1e-4f) continue;
+        u = a * uv[0][0] + b * uv[1][0] + g * uv[2][0]; v = a * uv[0][1] + b * uv[1][1] + g * uv[2][1];
+        return true;
+    }
+    return false;
+}
 } // namespace fs12

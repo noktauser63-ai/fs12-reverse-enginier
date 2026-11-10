@@ -1,5 +1,6 @@
 // android_main: platform duman testi uygulamasi. Gercek Game sinifi hazir oldukca burasi ona baglanacak.
 #ifdef __ANDROID__
+#include <cstring>
 #include "AndroidActivity.h"
 #include "InputDevice.h"
 #include "SystemDevice.h"
@@ -41,8 +42,16 @@ static void applyVehicle(const VehicleSpec* want) {
         g_veh.wheelBase = fz > rz ? fz - rz : 3.0f; g_veh.maxSpeed = want->topKmh / 3.6f; g_veh.wheelRadius = r;
         g_phys->createVehicle(g_veh.x, g_veh.z, g_veh.yaw, 1.5f, g_veh.wheelBase * 0.5f + 1.4f, 0.2f);
         g_spec = want;
+        // yakit: orijinal desc+0x138/0x13c (K420 180/0.003, 5465 350/0.008); yeni araclar segmente gore
+        float tank, rate; const bool comb = want->kind == VKind::Combine;
+        if (!strcmp(want->id, "agrotronK420")) { tank = 180.f; rate = 0.003f; }
+        else if (!strcmp(want->id, "deutz5465H")) { tank = 350.f; rate = 0.008f; }
+        else if (comb) { tank = want->segment == VSegment::Mid ? 500.f : 700.f; rate = want->segment == VSegment::Mid ? 0.011f : 0.015f; }
+        else if (want->kind == VKind::Pickup) { tank = 70.f; rate = 0.002f; }
+        else { tank = want->segment == VSegment::Mid ? 300.f : 450.f; rate = want->segment == VSegment::Mid ? 0.005f : 0.008f; }
+        g_veh.setFuel(tank, rate);
     } else {
-        g_spec = nullptr;
+        g_spec = nullptr; g_veh.setFuel(900.f, 0.015f);
         g_phys->createVehicle(g_veh.x, g_veh.z, g_veh.yaw, 1.5f, 3.6f, 0.2f);
         g_world->addDeutz7545(g_veh.x, 0.f, g_veh.z, g_veh.yaw);
     }
@@ -110,7 +119,7 @@ void onFrame(float dt) {
     g_dev->beginFrame();
     if (g_menu->inGame()) {
         g_gameClock += dt * 1.0f; if (g_gameClock >= 1440.f) g_gameClock -= 1440.f;   // 1 gercek sn = 1 oyun dk
-        GuiHudCtl h; h.money = (uint32_t)(g_menu->state().money < 0 ? 0 : g_menu->state().money); h.hours = (uint32_t)(g_gameClock / 60.f); h.minutes = (uint32_t)g_gameClock % 60; h.sel59c = 0; h.v124 = (uint32_t)(std::fabs(g_veh.speed) * 3.6f + 0.5f); h.pct = 1.0f;   // sol sayi = hiz km/h (tahmin), % = depo
+        GuiHudCtl h; h.money = (uint32_t)(g_menu->state().money < 0 ? 0 : g_menu->state().money); h.hours = (uint32_t)(g_gameClock / 60.f); h.minutes = (uint32_t)g_gameClock % 60; h.sel59c = 0; h.v124 = (uint32_t)std::ceil(g_veh.fuel - 0.0001f); h.f128 = g_veh.fuel < 50.f; h.v130 = (uint32_t)(std::fabs(g_veh.speed) * 3.6f); h.pct = g_veh.fuel / g_veh.fuelTank;   // orijinal fillIngameGuiDesc: +0x124 yakit L, +0x130 hiz km/h
         g_menu->renderHud(h);
     }
     g_menu->render();

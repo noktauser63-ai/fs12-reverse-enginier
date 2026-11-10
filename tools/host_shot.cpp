@@ -75,7 +75,8 @@ int main(int argc, char** argv) {
                     const VehicleSpec& sp = all[i];
                     wv.addVehicleSpec(sp);
                     wv.setSpecPose(0, 0, 0, 0, 0, 0.0f, 0.0f);
-                    const float D = sp.kind == VKind::Combine ? 15.f : (sp.kind == VKind::Planter ? 20.f : (sp.kind == VKind::Cultivator ? 13.f : 11.f)), A = 0.75f;
+                    if (const char* only = getenv("FS12_ONLY")) if (strcmp(only, sp.id)) { wv.removeVehicle(); continue; }
+                    const float D = sp.kind == VKind::Combine ? 15.f : (sp.kind == VKind::Planter ? 20.f : (sp.kind == VKind::Cultivator ? 13.f : 11.f)), A = getenv("FS12_AZ") ? (float)atof(getenv("FS12_AZ")) : 0.75f;
                     wv.setCamera(D * sinf(A), sp.kind == VKind::Combine ? 4.0f : 3.2f, D * cosf(A), -A, 0.17f);
                     r.clear(1.f, 0.f, 1.f); wv.render(); glFinish();
                     savePPM(std::string(ic) + "_" + sp.id + ".ppm", W, H);

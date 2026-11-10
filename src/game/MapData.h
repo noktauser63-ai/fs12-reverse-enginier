@@ -40,6 +40,8 @@ struct MapData {
     // Dosya verisi MapData yasadikca gecerli kalmalidir (mesh isaretcileri icine bakar).
     // zemin yuksekligi (dunya x,z): hucre zemin agi ucgenlerinden. false: harita disi / ucgen bulunamadi
     bool groundHeight(float x, float z, float& h) const;
+    // zemin agi UV'si (dunya x,z): hucre dokusunda o noktanin koordinati
+    bool groundUV(float x, float z, float& u, float& v) const;
     bool parse(const uint8_t* data, size_t size);
 };
 } // namespace fs12

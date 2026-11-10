@@ -1,6 +1,7 @@
 #if defined(__ANDROID__) || defined(FS12_GL)
 #include "game/WorldView.h"
 #include <cmath>
+#include <algorithm>
 #include <cstring>
 
 namespace fs12 {
@@ -30,6 +31,15 @@ bool WorldView::load(const char* assetPath) {
 // Yesil zemin karolarinda (map01 fieldDesc: 6,7,8,13,17,18,21,22,28) sabit tohumlu ot/cali yerlestirme.
 void WorldView::buildGrass() {
     m_grass.clear();
+    // dokunun piksellerini oku: patika/toprak seridi olan yerlere ot koyma
+    std::vector<std::vector<uint8_t>> pix(m_map.textures.size()); std::vector<uint32_t> pw(pix.size(), 0), ph(pix.size(), 0);
+    for (size_t i = 0; i < pix.size(); ++i) {
+        std::vector<uint8_t> raw;
+        if (!m_sys->loadAsset((std::string("map/") + m_map.textures[i]).c_str(), raw) || raw.size() < 20) continue;
+        uint32_t hd[5]; memcpy(hd, raw.data(), 20);
+        if (hd[0] != 1 || (size_t)hd[1] * hd[2] * 3 + 20 > raw.size()) continue;   // yalniz RGB8
+        pw[i] = hd[1]; ph[i] = hd[2]; pix[i].assign(raw.begin() + 20, raw.begin() + 20 + (size_t)hd[1] * hd[2] * 3);
+    }
     static const int kGreen[] = {6, 7, 8, 13, 17, 18, 21, 22, 28};
     for (size_t ci = 0; ci < m_map.cells.size(); ++ci) {
         const MapCellRec& c = m_map.cells[ci];
@@ -44,6 +54,15 @@ void WorldView::buildGrass() {
             const float yaw = rnd() * 6.2831853f, sc = 0.5f + rnd() * 0.5f;
             float y;
             if (!m_map.groundHeight(x, z, y)) continue;
+            if (c.fieldDesc < pix.size() && !pix[c.fieldDesc].empty()) {
+                float u, v;
+                if (m_map.groundUV(x, z, u, v)) {
+                    u -= floorf(u); v -= floorf(v);
+                    const uint32_t W = pw[c.fieldDesc], H = ph[c.fieldDesc];
+                    const uint8_t* q = &pix[c.fieldDesc][((size_t)std::min<uint32_t>((uint32_t)(v * H), H - 1) * W + std::min<uint32_t>((uint32_t)(u * W), W - 1)) * 3];
+                    if (!(q[1] >= q[0] && q[1] > q[2] + 20)) continue;   // yesil degil (patika/toprak)
+                }
+            }
             const float cs = cosf(yaw) * sc, sn = sinf(yaw) * sc;
             Tuft t = {{cs, 0, -sn, 0, 0, sc, 0, 0, sn, 0, cs, 0, x, y, z, 1}};
             m_grass.push_back(t);

@@ -152,3 +152,10 @@ CI host-tests: layout_test, gui_trace_test, gui_input_test.
 - Oturum 13c: 5465H bosaltma borusu govdeye ofsetle (pivot 1.2417,2.8945,1.2983: VehicleDesc+0x15c) yerlestirildi (katlanmis konum). Condor ekici + Vaederstad kultivator (acik kanat yerlesimi tahmini) dukkana eklendi (9 oge); ekipman surulmez (select/active disi), baglama/katlama mekanigi YOK.
 - Inekler: baska bir yapay zekadan gelecek model bekleniyor.
 - Oturum 13d: biçerdöver tablaları (cutter+reel) govdeye ofsetle takildi: 5465H (3 m, orijinal mesh), 6095 (4.5 m) ve 9230 (7.5 m) orijinal deutz7545 tablasi X olcekli (0.534 / 0.89), objectsShared dokusuyla. Konumlar gorsel tahmin. Takip cikarma (tabla satisi/degisimi) ve kesim mantigi hala TODO.
+
+## Oturum 14
+- HUD: orijinal Game::fillIngameGuiDesc'e gore duzeltildi: +0x124 = yakit (L), +0x128 = yakit<50 kirmizi, +0x130 = hiz km/h, % = depo doluluk. Yakit VehicleDrive'da (tank/tuketim: K420 180/0.003, 5465 350/0.008, 7545 900/0.015; yeni araclar segmente gore), bos depoda hiz tavani 4.2 m/s.
+- Fizik: Vehicle::update gaz rampasi (2.0->1.6 /s, x1.5), 0.85/0.15 hiz yumusatma, geri x0.7, hizla azalan direksiyon acisi.
+- Tekerlek tablolari K420/5465H desc (+0xd0 dingil mesafesi 2.862 / 3.525) ile dogrulandi; degisiklik gerekmedi.
+- Ot: yesil karolarda zemin dokusu piksel orneklenir; patika/toprak seridine ot konmaz (MapData::groundUV).
+- Oturum 14b: tekerlek yonu: orijinal kural sol=+x, kasnak (hub) disa bakar. Ursus/Magnum/Vaederstad/Pickup sol-sag yer degistirdi (sol tekerlek +x, sol camurluk +x). 9230 arka tekerlekler hub'a gore (left -x) kaldi. Konumlar p3d'lerde yok (parcalar merkezde), elle yerlesim. tools/host_shot FS12_ONLY/FS12_AZ ile arac basina yan/arka gorunum.
