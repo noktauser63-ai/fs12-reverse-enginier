@@ -28,7 +28,7 @@ add_library(fs12_data STATIC src/data/Strings.cpp src/data/FontData03.cpp src/da
 
 # ---- Oyun mantigi (GUI, ...) ----
 add_library(fs12_game STATIC src/game/GenericGUIManager.cpp src/game/GuiUpdate.cpp src/game/ModBridge.cpp src/game/MenuApp.cpp src/game/SaveGames.cpp src/game/MapData.cpp src/game/Cowshed.cpp src/game/CowHerd.cpp)
-target_link_libraries(fs12_game PUBLIC fs12_data fs12_platform)
+target_link_libraries(fs12_game PUBLIC fs12_data fs12_platform fs12_engine)
 target_include_directories(fs12_data PUBLIC src)
 
 # ---- Platform katmani (dosya/asset, kayit sifreleme, girdi) ----
