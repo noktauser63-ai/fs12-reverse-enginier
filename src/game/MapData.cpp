@@ -1,5 +1,3 @@
-#include <cmath>
-#include <cstring>
 #include "game/MapData.h"
 #include <cstring>
 
@@ -68,29 +66,5 @@ bool MapData::parse(const uint8_t* data, size_t size) {
         s.pts.resize((size_t)n * 2); memcpy(s.pts.data(), pts, (size_t)n * 8);
     }
     return r.ok && r.p == size;
-}
-
-bool MapData::groundHeight(float x, float z, float& h) const {
-    const int ix = (int)((x - minX()) / cellW), iy = (int)((z - minY()) / cellH);
-    if (x < minX() || z < minY() || ix < 0 || iy < 0 || ix >= (int)nx || iy >= (int)ny) return false;
-    const MapCellRec& c = cells[(size_t)iy * nx + ix];
-    if (c.texture >= meshes.size()) return false;
-    const MapMeshRef& m = meshes[c.texture];
-    const float dx = x - (originX + ix * cellW), dz = z - (originY + iy * cellH);
-    const float ca = std::cos(c.rotation), sa = std::sin(c.rotation);
-    const float lx = ca * dx - sa * dz, lz = sa * dx + ca * dz;   // dunya -> yerel (Y donusunun tersi)
-    for (uint32_t t = 0; t + 2 < m.indexCount; t += 3) {
-        float p[3][3];
-        for (int k = 0; k < 3; ++k) memcpy(p[k], m.vertices + (size_t)m.indices[t + k] * 24, 12);
-        const float d = (p[1][2] - p[2][2]) * (p[0][0] - p[2][0]) + (p[2][0] - p[1][0]) * (p[0][2] - p[2][2]);
-        if (std::fabs(d) < 1e-9f) continue;
-        const float a = ((p[1][2] - p[2][2]) * (lx - p[2][0]) + (p[2][0] - p[1][0]) * (lz - p[2][2])) / d;
-        const float b = ((p[2][2] - p[0][2]) * (lx - p[2][0]) + (p[0][0] - p[2][0]) * (lz - p[2][2])) / d;
-        const float g = 1.f - a - b;
-        if (a < -1e-4f || b < -1e-4f || g < -1e-4f) continue;
-        h = a * p[0][1] + b * p[1][1] + g * p[2][1] + c.unknown;
-        return true;
-    }
-    return false;
 }
 } // namespace fs12

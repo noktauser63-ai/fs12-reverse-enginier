@@ -4,7 +4,6 @@
 #include <cstring>
 
 namespace fs12 {
-static float bitsF(uint32_t b) { float f; memcpy(&f, &b, 4); return f; }
 
 bool WorldView::load(const char* assetPath) {
     if (!m_sys->loadAsset(assetPath, m_file)) return false;
@@ -15,75 +14,14 @@ bool WorldView::load(const char* assetPath) {
         m_mesh.push_back(m_r->meshFromMemory(std::string("m3d:") + assetPath + ":" + std::to_string(i), chunk));
     }
     for (auto& n : m_map.textures) m_tex.push_back(m_r->texture((std::string("map/") + n).c_str()));
-    m_lightmap = m_r->texture("map/map01LightMap_P.p2d");
     m_loaded = true;
     return true;
 }
 
-bool WorldView::addProp(const char* p3d, const char* tex, float x, float y, float z, float yaw) {
-    m_propData.emplace_back();
-    if (!m_sys->loadAsset(p3d, m_propData.back())) { m_propData.pop_back(); return false; }
-    Mesh* mesh = m_r->meshFromMemory(std::string("p3d:") + p3d, m_propData.back().data());
-    Texture2D* t = m_r->texture(tex);
-    if (!mesh || !t) return false;
-    const float c = cosf(yaw), s = sinf(yaw);
-    Prop pr{mesh, t, {c,0,-s,0, 0,1,0,0, s,0,c,0, x,y,z,1}};
-    m_props.push_back(pr);
-    return true;
-}
-
-bool WorldView::addDeutz7545(float x, float y, float z, float yaw) {
-    const char* tex = "objects/objectsShared_diffuse.p2d";
-    m_deutz0 = (int)m_props.size();
-    bool ok = addProp("objects/deutz7545_frame.p3d", tex, x, y, z, yaw);
-    struct W { const char* mesh; float lx, ly, lz; };
-    static const W w[4] = {
-        {"objects/deutz7545_wheelFrontRight.p3d", bitsF(0xbfa347d8), bitsF(0x3f6c9ba6), bitsF(0x40129fe8)},
-        {"objects/deutz7545_wheelFrontLeft.p3d",  bitsF(0x3fa347d8), bitsF(0x3f6c9ba6), bitsF(0x40129fe8)},
-        {"objects/deutz7545_wheelBackRight.p3d",  bitsF(0xbfa21c58), bitsF(0x3f332f45), bitsF(0xbfabc212)},
-        {"objects/deutz7545_wheelBackLeft.p3d",   bitsF(0x3fa21c58), bitsF(0x3f332f45), bitsF(0xbfabc212)}};
-    const float c = cosf(yaw), s = sinf(yaw);
-    for (const W& wh : w)   // yerel (lx,ly,lz) -> dunya: Y ekseni etrafinda donus
-        ok &= addProp(wh.mesh, tex, x + c * wh.lx + s * wh.lz, y + wh.ly, z - s * wh.lx + c * wh.lz, yaw);
-    return ok;
-}
-
-static const float kDeutzWheel[4][4] = {{-1.2756f, 0.9243f, 2.291f, 0.9243f}, {1.2756f, 0.9243f, 2.291f, 0.9243f},
-                                       {-1.2665f, 0.6999f, -1.3419f, 0.6999f}, {1.2665f, 0.6999f, -1.3419f, 0.6999f}};   // x,y,z,yaricap
-void WorldView::setDeutzPose(float x, float y, float z, float yaw, float pitch, float steer, float spin) {
-    if (m_deutz0 < 0 || m_props.size() < (size_t)m_deutz0 + 5) return;
-    const float cy = cosf(yaw), sy = sinf(yaw), cp = cosf(-pitch), sp = sinf(-pitch);
-    // govde: RY(yaw) * RX(-pitch) (sutun-oncelikli)
-    const float RY[16] = {cy,0,-sy,0, 0,1,0,0, sy,0,cy,0, x,y,z,1};
-    const float RX[16] = {1,0,0,0, 0,cp,sp,0, 0,-sp,cp,0, 0,0,0,1};
-    float B[16]; Renderer::multiply(B, RY, RX);
-    memcpy(m_props[m_deutz0].m, B, sizeof(B));
-    for (int i = 0; i < 4; ++i) {
-        const float* w = kDeutzWheel[i];
-        const float st = i < 2 ? steer : 0.f, cs = cosf(st), ss = sinf(st), cw = cosf(spin), sw = sinf(spin);
-        const float T[16] = {1,0,0,0, 0,1,0,0, 0,0,1,0, w[0], w[1], w[2], 1};
-        const float S[16] = {cs,0,-ss,0, 0,1,0,0, ss,0,cs,0, 0,0,0,1};
-        const float R[16] = {1,0,0,0, 0,cw,sw,0, 0,-sw,cw,0, 0,0,0,1};
-        float a[16], b[16], c[16];
-        Renderer::multiply(a, T, S); Renderer::multiply(b, a, R); Renderer::multiply(c, B, b);
-        memcpy(m_props[m_deutz0 + 1 + i].m, c, sizeof(c));
-    }
-}
-
-void WorldView::drawMesh(const Mesh* mesh, Texture2D* tex, const float* model, bool alphaTest, bool lightmap) {
-    lightmap = lightmap && m_lightmap && m_lightmap->id;
-    Program* p = lightmap ? m_r->program("vertexShaderWorldLightmap", "fragmentShaderWorldLightmap")
-                          : m_r->program("vertexShaderDefault", alphaTest ? "fragmentShaderDefaultAT" : "fragmentShaderDefault");
+void WorldView::drawMesh(const Mesh* mesh, Texture2D* tex, const float* model, bool alphaTest) {
+    Program* p = m_r->program("vertexShaderDefault", alphaTest ? "fragmentShaderDefaultAT" : "fragmentShaderDefault");
     if (!p || !p->id || !mesh || !tex || !tex->id) return;
     m_r->use(p);
-    if (lightmap) {
-        const GLint mw = p->uniform("u_mwMatrix");
-        if (mw >= 0) glUniformMatrix4fv(mw, 1, GL_FALSE, model);
-        const GLint t1 = p->uniform("s_TexUnit1");
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, m_lightmap->id);
-        if (t1 >= 0) glUniform1i(t1, 1);
-    }
     float mv[16], mvp[16];
     Renderer::multiply(mv, m_view, model);
     Renderer::multiply(mvp, m_proj, mv);
@@ -118,10 +56,8 @@ void WorldView::render() {
     for (float& v : dw) v /= len;
     float dv[3];
     for (int r = 0; r < 3; ++r) dv[r] = m_view[0 + r] * dw[0] + m_view[4 + r] * dw[1] + m_view[8 + r] * dw[2];
-    const char* progs[3][2] = {{"vertexShaderDefault", "fragmentShaderDefault"}, {"vertexShaderDefault", "fragmentShaderDefaultAT"},
-                               {"vertexShaderWorldLightmap", "fragmentShaderWorldLightmap"}};
-    for (auto& pn : progs) {
-        Program* p = m_r->program(pn[0], pn[1]);
+    for (const char* fs : {"fragmentShaderDefault", "fragmentShaderDefaultAT"}) {
+        Program* p = m_r->program("vertexShaderDefault", fs);
         if (!p || !p->id) continue;
         m_r->use(p);
         const float amb[3] = {0.45f, 0.47f, 0.5f}, dif[3] = {0.75f, 0.72f, 0.65f}, none[3] = {0, 0, 0}, cone[2] = {1, 0};
@@ -143,18 +79,35 @@ void WorldView::render() {
         if (dx * dx + dz * dz > R2) continue;
         const float ca = cosf(c.rotation), sa = sinf(c.rotation);
         const float M[16] = {ca,0,-sa,0, 0,1,0,0, sa,0,ca,0, x, c.unknown, z, 1};
-        if (c.texture < m_mesh.size() && c.fieldDesc < m_tex.size()) drawMesh(m_mesh[c.texture], m_tex[c.fieldDesc], M, false, useLightmap);
+        if (c.texture < m_mesh.size() && c.fieldDesc < m_tex.size()) drawMesh(m_mesh[c.texture], m_tex[c.fieldDesc], M, false);
     }
     // nesneler
-    for (const MapObjectRec& o : m_map.objects) {
+    for (size_t oi = 0; oi < m_map.objects.size(); ++oi) {
+        const MapObjectRec& o = m_map.objects[oi];
+        bool hid = false;
+        for (size_t h : m_hidden) if (h == oi) { hid = true; break; }
+        if (hid) continue;
         const float cx = (o.aabb[0] + o.aabb[3]) * 0.5f, cz = (o.aabb[2] + o.aabb[5]) * 0.5f;
         const float dx = cx - m_cam[0], dz = cz - m_cam[2];
         if (dx * dx + dz * dz > R2) continue;
-        if (o.mesh < m_mesh.size() && o.texture < m_tex.size()) drawMesh(m_mesh[o.mesh], m_tex[o.texture], o.matrix, (o.flags & 2) != 0, false);
+        if (o.mesh < m_mesh.size() && o.texture < m_tex.size()) drawMesh(m_mesh[o.mesh], m_tex[o.texture], o.matrix, (o.flags & 2) != 0);
     }
-    for (const Prop& pr : m_props) drawMesh(pr.mesh, pr.tex, pr.m, false, false);
-    glActiveTexture(GL_TEXTURE0);
+    renderCows();
     glDisable(GL_CULL_FACE);
+}
+
+// Inekler: sabit durus/uyku modeli, varsayilan golgelendirici (ilk surum; cihazda DOGRULANMADI).
+void WorldView::renderCows() {
+    if (!m_herd) return;
+    Texture2D* tex[2] = {m_r->texture("objects/cowStanding_diffuse.p2d"), m_r->texture("objects/cowStanding02_diffuse.p2d")};
+    Mesh* stand = m_r->mesh("objects/cowStanding.p3d");
+    Mesh* sleep = m_r->mesh("objects/cowSleeping.p3d");
+    for (int i = 0; i < CowHerd::kCount; ++i) {
+        const CowSlot& c = m_herd->slots()[i];
+        const float ca = cosf(c.yaw), sa = sinf(c.yaw);
+        const float M[16] = {ca,0,-sa,0, 0,1,0,0, sa,0,ca,0, c.x, m_herd->y(), c.z, 1};
+        drawMesh(c.sleeping ? sleep : stand, tex[c.skin], M, false);
+    }
 }
 } // namespace fs12
 #endif

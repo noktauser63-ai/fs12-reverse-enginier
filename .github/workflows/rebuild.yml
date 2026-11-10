@@ -123,13 +123,10 @@ jobs:
           ASSETZIP="$(find . -path ./build-host -prune -o \( -name main.zip -o -name 'main*.apk' -o -name 'main*.obb' -o -name 'FS12*.apk' \) -print | head -1)"
           if [ -z "$ASSETZIP" ]; then echo "HATA: oyunun asset zip'i yok. Repoya mainapk/main.zip (orijinal APK'nin assets/ klasorunu iceren zip) koy."; exit 1; fi
           echo "asset kaynagi: $ASSETZIP"
-          unzip -q -o "$ASSETZIP" 'assets/*' -d "$RUNNER_TEMP/apk"   # audio, gui, map, objects, shader (dunya gorunumu icin map/ gerekli)
+          unzip -q -o "$ASSETZIP" 'assets/*' -d "$RUNNER_TEMP/apk"
+          cp -r assets_extra/. "$RUNNER_TEMP/apk/assets/"   # inek/balya/gubre modelleri ve dokulari (FS12 bicimine cevrilmis)   # audio, gui, map, objects, shader (dunya gorunumu icin map/ gerekli)
           for d in audio gui map objects shader; do [ -d "$RUNNER_TEMP/apk/assets/$d" ] || echo "UYARI: assets/$d yok"; done
           ls "$RUNNER_TEMP/apk/assets" | head
-      - name: Yuksek kaliteli dokulari uygula (hd_textures/ -> .p2d)
-        run: |
-          pip install pillow
-          if [ -d hd_textures ]; then python3 tools/png2p2d.py "$RUNNER_TEMP/apk/assets" hd_textures "$RUNNER_TEMP/apk/assets" | tail -40; fi
       - name: Turkce harfler icin font atlasini yamala
         run: |
           pip install numpy pillow

@@ -3,8 +3,6 @@
 #include "game/GuiDeviceGL.h"
 #include "game/MenuApp.h"
 #include "game/WorldView.h"
-#include "game/VehicleDrive.h"
-#include "game/MapPhysics.h"
 #include "platform/InputDevice.h"
 #include "platform/SystemDevice.h"
 #include "render/Renderer.h"
@@ -59,12 +57,6 @@ int main(int argc, char** argv) {
         if (wv.load()) {
             float v[5] = {0, 8, 0, 0, 0.3f};
             for (int i = 0; i < 5 && argc > 4 + i; ++i) v[i] = (float)atof(argv[4 + i]);
-            wv.addDeutz7545(10, 0, -3, 0.5f);
-            MapPhysics mp; mp.build(wv.map()); VehicleDrive veh; mp.createVehicle(veh.x, veh.z, veh.yaw, 1.5f, 3.6f, 0.2f); veh.phys = &mp; printf("statik: %d\n", mp.staticCount()); veh.camYaw = 3.14159265f - veh.yaw; veh.throttle = 1.f; veh.steerIn = 0.25f;
-            for (int i = 0; i < 100; ++i) { veh.update(0.05f, &wv.map()); if (i == 40) veh.steerIn = -0.2f; }
-            printf("arac: x=%.1f y=%.2f z=%.1f yaw=%.2f hiz=%.1f pitch=%.2f\n", veh.x, veh.y, veh.z, veh.yaw, veh.speed, veh.pitch);
-            wv.setDeutzPose(veh.x, veh.y, veh.z, veh.yaw, veh.pitch, veh.steer, veh.spin);
-            v[0] = veh.camPos[0]; v[1] = veh.camPos[1]; v[2] = veh.camPos[2]; v[3] = veh.camYaw; v[4] = veh.camPitch; argc = 0;
             wv.setCamera(v[0], v[1], v[2], v[3], v[4]);
             r.clear(0.55f, 0.7f, 0.9f); wv.render(); glFinish();
             printf("dunya: %d cizim\n", wv.lastDrawCalls);

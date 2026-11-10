@@ -8,9 +8,9 @@
 #include "game/GuiDeviceGL.h"
 #include "game/MenuApp.h"
 #include "game/WorldView.h"
+#include "game/CowHerd.h"
+#include "game/CowshedSite.h"
 #include "game/WorldCamera.h"
-#include "game/VehicleDrive.h"
-#include "game/MapPhysics.h"
 #include <GLES2/gl2.h>
 #include <cmath>
 #include <string>
@@ -25,8 +25,8 @@ GuiDeviceGL* g_dev = nullptr;
 MenuApp* g_menu = nullptr;
 WorldView* g_world = nullptr;
 WorldCamera g_cam;
-VehicleDrive g_veh;
-MapPhysics* g_phys = nullptr;
+CowHerd g_herd;
+float g_hour = 8.f;   // oyun saati (Game gelene kadar yer tutucu: 1 gercek sn = 1 oyun dk)
 bool g_wasIn = false;
 
 void onInit(android_app* app) {
@@ -45,12 +45,12 @@ void onInit(android_app* app) {
     g_dev = new GuiDeviceGL(g_r, sd->languageCode().c_str());
     g_world = new WorldView(g_r, sd);
     g_world->load();
-    g_phys = new MapPhysics();
-    g_phys->build(g_world->map());
-    g_phys->createVehicle(g_veh.x, g_veh.z, g_veh.yaw, 1.5f, 3.6f, 0.2f);
-    g_veh.phys = g_phys;
-    g_world->addDeutz7545(g_veh.x, 0.f, g_veh.z, g_veh.yaw);   // Deutz 7545 bicerdover
-    g_veh.camYaw = 3.14159265f - g_veh.yaw;
+    // Silolarin karsisindaki kapali ambar kaldirilir, yerine inek surusu konur (ahir modeli sonra).
+    g_world->hideObject(cowshed_site::kBarnObject);
+    g_world->hideObject(cowshed_site::kConveyorObject);
+    g_herd.setPlacement(cowshed_site::kHerdX, cowshed_site::kHerdY, cowshed_site::kHerdZ, cowshed_site::kHerdYaw);
+    g_world->setCowHerd(&g_herd);
+    g_cam.pos[0] = cowshed_site::kHerdX - 30.f; g_cam.pos[1] = 4.f; g_cam.pos[2] = cowshed_site::kHerdZ;
     g_menu = new MenuApp(g_dev, g_dev->textures(), sd->language());
     static struct NoGameCb : SaveGames::AppSaveGameCallbackInterface {   // Game sinifi gelene kadar yer tutucu
         uint32_t serialize(AppSaveGameSlotData&, uint8_t*, const char*) override { return 0; }
@@ -65,14 +65,10 @@ void onGLRestored() { if (g_r) { g_r->resize(AndroidActivity::instance()->width(
 void onFrame(float dt) {
     InputDevice* in = InputDevice::instance();
     g_menu->update(in, dt);
-    if (g_menu->inGame() && g_world && g_world->loaded()) {
-        g_veh.readTouch(in);
-        g_veh.update(dt > 0.05f ? 0.05f : dt, &g_world->map());
-        g_world->setDeutzPose(g_veh.x, g_veh.y, g_veh.z, g_veh.yaw, g_veh.pitch, g_veh.steer, g_veh.spin);
-        g_cam.pos[0] = g_veh.camPos[0]; g_cam.pos[1] = g_veh.camPos[1]; g_cam.pos[2] = g_veh.camPos[2];
-        g_cam.yaw = g_veh.camYaw; g_cam.pitch = g_veh.camPitch;
-    }
-    if (g_menu->playing()) g_r->clear(0.55f, 0.7f, 0.9f); else g_r->clear(0.f, 0.f, 0.f);   // gokyuzu rengi
+    g_hour += dt / 60.f; if (g_hour >= 24.f) g_hour -= 24.f;
+    g_herd.update(g_hour);
+    if (g_menu->inGame()) g_cam.update(in, dt);
+    g_r->clear(0.f, 0.f, 0.f);
     if (g_menu->playing() && g_world && g_world->loaded()) {
         g_world->setCamera(g_cam.pos[0], g_cam.pos[1], g_cam.pos[2], g_cam.yaw, g_cam.pitch);
         g_world->render();

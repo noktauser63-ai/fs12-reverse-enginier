@@ -125,8 +125,20 @@ CI host-tests: layout_test, gui_trace_test, gui_input_test.
 - MenuApp: startGame/pauseGame/inGame; yeni oyun/yukleme -> dunya; geri tusu veya sag ust kose -> duraklat menusu; geri = devam, cikis = baslik.
 - Buycoin dugmesi gizlendi (Google Play kaldirildi). tools/host_shot ile ekran goruntusu dogrulamasi.
 - Siradaki: HUD (renderBaseMenu), arazi/tarla katmanlari, arac/varlik sistemi.
-- Oturum 10b: CMake'e WorldView.cpp eklendi (link hatasi), Credits \xbc kacisi, ETC1 yazilim cozumu (telefonda donanim yolu bozuk), zemin karolarinda WorldLightmap shader.
-- Siradaki: tarla/ekin katmani (FieldGround shader), gokyuzu/sis, HUD, araclar.
-- Oturum 10c: Deutz 7545 bicerdover (EntityManager tablosundan tekerlek konumlari), MapData::groundHeight, VehicleDrive (gecici bisiklet modeli surus + takip kamerasi), dokunmatik: sol %40 gaz (yukari=ileri), sag direksiyon. tools/png2p2d.py (yuksek cozunurluklu doku).
-- Siradaki: gercek Vehicle/Wheel fizigi (Box2D), carpisma (polygons), digger araclar, HUD.
-- Oturum 10d: MapPhysics (Box2D, 1347 statik cokgen = Map::load gibi, konum (a,b) + yerel kose), arac govdesi, tests/mapphysics_test. NOT: harita kenarindaki ilk cokgenler sinir seritleri.
+
+## Oturum 11 — Ahir (Cowshed) modulu
+- Kaynak: FS14 libfs14.so, Cows::update @ 0024e268 (Ghidra decompile). Sabitler: yem 6000 L/gun, saman 4000 L/gun, gubre 1000 L/gun,
+  sagim 06-07 ve 17-18 arasi (potansiyel -3000/saat, tanka en fazla 1000 L/saat), sut tanki 14000 L, ahir 32 ot + 32 saman balyasi.
+- [x] src/game/Cowshed.{h,cpp}: saf mantik (Game bagimliligi yok), kayit (serialize/deserialize v1), tests/cowshed_test.cpp (host, gecti).
+- [ ] TODO(constants.txt): BALE_VOLUME, MAX_MANURE_FILL_LEVEL, DAY_START_HOUR/NIGHT_START_HOUR, BALE_PRICE degerleri (FS14 .so veri bolumu; DumpConstants.java ile alinacak).
+- [ ] Game/Map/TipSite/Tool sinifi yok: "kapali ambar (saman satisi)" nesnesi haritada (m3d) duruyor, kodda karsiligi henuz yok.
+      Ambar -> ahir degisimi icin: harita nesnesi + satis noktasi mantigi Game portuyla birlikte yapilacak.
+- [ ] Gorsel: cowStanding/cowSleeping .p3d (+_shadow), cowStanding(02)_diffuse.p2d, bale.p3d, bale_grass/bale_straw.p2d. Renderer mesh/doku yukleyebiliyor; COW_ANIM shader'i (FS14) ayri portlanacak.
+- Not: ekonomi degerleri (ahir 120.000, sut 0,60/L) ONERI; oynayarak ayarlanacak.
+
+## Oturum 12 — inekler
+- [x] tools/convert_p3d_fs14_to_fs12.py (FS14 28 bayt vertex + surum alani -> FS12 24 bayt). assets_extra/objects: cevrilmis inek/balya/gubre dosyalari; rebuild.yml paketlemede assets'e kopyalar.
+- [x] src/game/CowHerd.* (7 inek yerlesimi, gece yatma), WorldView::setCowHerd/renderCows (GL'de DOGRULANMADI), tests/cowherd_test.cpp (gecti).
+- [x] FS12 TipSite/Map::load analizi: docs/AHIR_ENTEGRASYON.md (7 satis/depo/BGA noktasi, fiyat formulu).
+- Siradaki: ambar noktasini belirle, Game baglantisi, COW_ANIM.
+- [x] Ahir yeri: silolarin karsisindaki kapali ambar = harita nesnesi #92 (102.3, 199.8); WorldView::hideObject, CowshedSite.h, android_entry baglandi (GL/cihazda dogrulanmadi). tools/map_objects.cpp.

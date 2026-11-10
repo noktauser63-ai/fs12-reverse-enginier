@@ -3,6 +3,7 @@
 #pragma once
 #if defined(__ANDROID__) || defined(FS12_GL)
 #include "game/MapData.h"
+#include "game/CowHerd.h"
 #include "render/Renderer.h"
 #include <string>
 #include <vector>
@@ -15,33 +16,26 @@ public:
     bool loaded() const { return m_loaded; }
     // kamera: konum + yaw (Y ekseni, radyan) + pitch (asagi pozitif)
     void setCamera(float x, float y, float z, float yaw, float pitch) { m_cam[0] = x; m_cam[1] = y; m_cam[2] = z; m_yaw = yaw; m_pitch = pitch; }
-    // sahne nesnesi (arac parcasi vb.): objects/<ad>.p3d + dokusu; model = yaw (Y) + konum
-    bool addProp(const char* p3d, const char* tex, float x, float y, float z, float yaw);
-    // Deutz 7545 (EntityManager::init tablosundan: tekerlek konumlari VehicleDesc +0x714..)
-    bool addDeutz7545(float x, float y, float z, float yaw);
-    // Deutz 7545 pozu: konum, yaw (Y), pitch (on yukari pozitif), on tekerlek direksiyonu, tekerlek donusu
-    void setDeutzPose(float x, float y, float z, float yaw, float pitch, float steer, float spin);
     void render();
     const MapData& map() const { return m_map; }
     float cam[3] = {0, 0, 0};
     void getCamera(float* p, float& yaw, float& pitch) const { p[0] = m_cam[0]; p[1] = m_cam[1]; p[2] = m_cam[2]; yaw = m_yaw; pitch = m_pitch; }
+    void hideObject(size_t index) { m_hidden.push_back(index); }   // harita nesnesini cizme (ambar kaldirma)
+    void setCowHerd(const CowHerd* h) { m_herd = h; }   // nullptr: inek cizme
     float drawDistance = 300.0f;
     int lastDrawCalls = 0;
-    bool useLightmap = true;   // zemin karolarinda isik haritasi (orijinal fragmentShaderWorldLightmap)
 private:
-    void drawMesh(const Mesh* mesh, Texture2D* tex, const float* model, bool alphaTest, bool lightmap = false);
+    void drawMesh(const Mesh* mesh, Texture2D* tex, const float* model, bool alphaTest);
     Renderer* m_r; SystemDevice* m_sys;
     std::vector<uint8_t> m_file;
     MapData m_map;
     std::vector<Mesh*> m_mesh;
     std::vector<Texture2D*> m_tex;
-    Texture2D* m_lightmap = nullptr;
-    struct Prop { Mesh* mesh; Texture2D* tex; float m[16]; };
-    std::vector<Prop> m_props;
-    int m_deutz0 = -1;
-    std::vector<std::vector<uint8_t>> m_propData;
     float m_cam[3] = {0, 0, 0}, m_yaw = 0, m_pitch = 0;
     float m_view[16], m_proj[16];
+    std::vector<size_t> m_hidden;
+    const CowHerd* m_herd = nullptr;
+    void renderCows();
     bool m_loaded = false;
 };
 } // namespace fs12
