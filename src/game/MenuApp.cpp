@@ -118,7 +118,11 @@ void MenuApp::pauseGame() { if (m_playing) { m_paused = true; enter(7); } }
 void MenuApp::update(InputDevice* in, float dt) {
     if (inGame()) {
         float tx, ty;
-        if (in->backKeyEdge() || (in->getTouchUp(tx, ty) && tx > 0.92f && ty < 0.1f)) pauseGame();
+        if (in->backKeyEdge()) { pauseGame(); return; }
+        if (in->getTouchUp(tx, ty) && ty < 0.16f) {
+            if (tx > 0.90f) pauseGame();                                          // sag ust: menu (buton 1, id 7)
+            else if (tx < 0.10f) { pauseGame(); m_gui.wr(0x58cc, 1); m_gui.wr(0x5840, 0); m_gui.wr(0x5844, 0); }   // sol ust: market (buton 0, id 6)
+        }
         return;
     }
     m_age += dt;
@@ -136,6 +140,8 @@ void MenuApp::update(InputDevice* in, float dt) {
 }
 
 void MenuApp::renderHud(const GuiHudCtl& hud) {
+    // oyun ici ust butonlar: 0 = market (id 6), 1 = menu (id 7) -- orijinal updateBaseMenu listesi
+    m_gui.wr(0x59a8, 2); m_gui.wr(0x59ac, 0); m_gui.wr(0x59b0, 1);
     GuiMenuCtl c = m_ctl; c.state = 6; c.hud = hud;
     m_gui.renderBaseMenu(c, m_lang);
 }

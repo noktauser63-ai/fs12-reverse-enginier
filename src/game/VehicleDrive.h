@@ -50,8 +50,14 @@ struct VehicleDrive {
         if (fuel <= 0.f) vmax = std::fmin(vmax, 4.2f);
         float target = thr * vmax;
         if (thr < 0) target *= 0.7f;                             // geri vites x0.7
-        const float k = 1.f - std::pow(0.85f, dt * 60.f);        // 0.85/0.15 kare basina yumusatma
-        speed += (target - speed) * k;
+        // ivme sinirli: tam hiza ~8 sn, gaz birakinca ~6 sn'de durur, fren/ters ~3 sn (gercekci agirlik hissi)
+        const float aUp = std::fmax(1.0f, vmax) / 8.f, aCoast = std::fmax(1.0f, vmax) / 6.f, aBrake = std::fmax(1.0f, vmax) / 3.f;
+        const bool braking = (target * speed < 0.f) || (std::fabs(target) < std::fabs(speed) && throttle != 0.f && throttle * speed < 0.f);
+        float a = aUp;
+        if (std::fabs(target) < std::fabs(speed) || target * speed < 0.f) a = (target * speed < 0.f) ? aBrake : aCoast;
+        (void)braking;
+        const float dv = target - speed, st = a * dt;
+        speed += std::fabs(dv) <= st ? dv : (dv > 0 ? st : -st);
         if (std::fabs(speed) < 0.02f && throttle == 0.f) speed = 0.f;
         fuel -= std::fabs(speed) * dt * fuelRate; if (fuel < 0.f) fuel = 0.f;
         if (fuel <= 0.f && std::fabs(speed) < 0.1f) { emptyT += dt; if (emptyT > 8.f) { fuel = fuelTank; emptyT = 0.f; } } else emptyT = 0.f;

@@ -159,3 +159,4 @@ CI host-tests: layout_test, gui_trace_test, gui_input_test.
 - Tekerlek tablolari K420/5465H desc (+0xd0 dingil mesafesi 2.862 / 3.525) ile dogrulandi; degisiklik gerekmedi.
 - Ot: yesil karolarda zemin dokusu piksel orneklenir; patika/toprak seridine ot konmaz (MapData::groundUV).
 - Oturum 14b: tekerlek yonu: orijinal kural sol=+x, kasnak (hub) disa bakar. Ursus/Magnum/Vaederstad/Pickup sol-sag yer degistirdi (sol tekerlek +x, sol camurluk +x). 9230 arka tekerlekler hub'a gore (left -x) kaldi. Konumlar p3d'lerde yok (parcalar merkezde), elle yerlesim. tools/host_shot FS12_ONLY/FS12_AZ ile arac basina yan/arka gorunum.
+- Oturum 14c: oyun ici HUD butonlari (market=sol ust, menu=sag ust; orijinal buton 0/1, liste +0x59a8) cizilir ve dokunusla acilir (market -> sayfa 1). Surus ivmesi sinirli (tam hiz ~8 sn, birakinca ~6 sn, fren ~3 sn). host_shot _hud.ppm.

@@ -87,6 +87,10 @@ int main(int argc, char** argv) {
             r.clear(0.55f, 0.7f, 0.9f); wv.render(); glFinish();
             printf("dunya: %d cizim\n", wv.lastDrawCalls);
             savePPM(pre + "_world.ppm", W, H);
+            {   // HUD (ust cubuk + market/menu butonlari) dunya uzerine
+                GuiHudCtl h; h.money = 450000; h.v124 = 180; h.f128 = 0; h.v130 = 23; h.hours = 8; h.minutes = 30; h.pct = 1.0f;
+                dev.beginFrame(); app.renderHud(h); glFinish(); savePPM(pre + "_hud.ppm", W, H);
+            }
         } else printf("harita yuklenemedi\n");
     }
     printf("tamam\n");
